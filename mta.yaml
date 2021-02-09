@@ -1,0 +1,84 @@
+_schema-version: "3.2"
+ID: extend-ui
+version: 0.0.1
+modules:
+- name: extend-ui-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: extend-ui-destination-service
+    parameters:
+      content-target: true
+  - name: extend-ui_html_repo_host
+    parameters:
+      service-key:
+        name: extend-ui_html_repo_host-key
+  - name: uaa_extend-ui
+    parameters:
+      service-key:
+        name: uaa_extend-ui-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: bpManagedServices_extend_ui_html_repo_host
+          ServiceInstanceName: extend-ui-html5-app-host-service
+          ServiceKeyName: extend-ui_html_repo_host-key
+          sap.cloud.service: bpManagedServices
+        - Authentication: OAuth2UserTokenExchange
+          Name: bpManagedServices_uaa_extend_ui
+          ServiceInstanceName: extend-ui-xsuaa-service
+          ServiceKeyName: uaa_extend-ui-key
+          sap.cloud.service: bpManagedServices
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: extend-ui_ui_deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: extend-ui_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - BP-content.zip
+      name: BP
+      target-path: resources/
+- name: BP
+  type: html5
+  path: BP
+  build-parameters:
+    builder: custom
+    commands:
+    - npm run build
+    supported-platforms: []
+resources:
+- name: extend-ui-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      version: 1.0.0
+    service: destination
+    service-name: extend-ui-destination-service
+    service-plan: lite
+- name: extend-ui_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: extend-ui-html5-app-host-service
+    service-plan: app-host
+- name: uaa_extend-ui
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: extend-ui-xsuaa-service
+    service-plan: application
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm install
